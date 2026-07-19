@@ -155,6 +155,35 @@
   @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
 
   .error-box { color: var(--red); font-family: 'IBM Plex Mono', monospace; font-size: 13px; margin-top: 16px; }
+
+  .deep { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 18px; }
+  .deep-row { margin-bottom: 20px; }
+  .deep-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .deep-value { font-size: 14px; line-height: 1.6; color: var(--text); }
+  .objection-item {
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 3px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .objection-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  #questions-list { padding-left: 18px; font-size: 14px; line-height: 1.7; color: var(--text); }
+  #questions-list li::marker { color: var(--amber); }
 </style>
 </head>
 <body>
@@ -170,7 +199,7 @@
 
   <div class="panel">
     <textarea id="proposal" placeholder="e.g. What if we let generic parameters infer their trait bounds automatically instead of requiring explicit bounds?"></textarea>
-    <button id="checkBtn" onclick="checkDejaVu()">Check for déjà vu</button>
+    <button id="checkBtn" onclick="checkDejaVu()">Analyze historical precedent</button>
 
     <div class="loading" id="loading"><span class="pulse"></span> searching real history, then reasoning over it…</div>
     <div class="error-box" id="error" style="display:none;"></div>
@@ -182,6 +211,28 @@
       <div class="explanation" id="explanation"></div>
       <div class="reasoning-block" id="reasoning-block" style="display:none;"></div>
       <div class="receipt" id="receipt"></div>
+
+      <div class="deep" id="deep" style="display:none;">
+        <div class="deep-row" id="outcome-row" style="display:none;">
+          <div class="deep-label">What actually happened</div>
+          <div class="deep-value" id="outcome-value"></div>
+        </div>
+
+        <div class="deep-row" id="objections-row" style="display:none;">
+          <div class="deep-label">Real objections raised at the time</div>
+          <div id="objections-list"></div>
+        </div>
+
+        <div class="deep-row" id="diff-row" style="display:none;">
+          <div class="deep-label">How your proposal differs</div>
+          <div class="deep-value" id="diff-value"></div>
+        </div>
+
+        <div class="deep-row" id="questions-row" style="display:none;">
+          <div class="deep-label">Address these before re-proposing</div>
+          <ul id="questions-list"></ul>
+        </div>
+      </div>
 
       <div class="candidates">
         <div class="candidates-label">Evidence considered</div>
@@ -280,6 +331,52 @@ function renderResult(data) {
   });
 
   document.getElementById('result').classList.add('show');
+
+  const deep = data.deep_analysis;
+  const deepBox = document.getElementById('deep');
+  if (!deep || deep.error) {
+    deepBox.style.display = 'none';
+    return;
+  }
+  deepBox.style.display = 'block';
+
+  const outcomeRow = document.getElementById('outcome-row');
+  if (deep.outcome) {
+    outcomeRow.style.display = 'block';
+    document.getElementById('outcome-value').textContent = deep.outcome;
+  } else { outcomeRow.style.display = 'none'; }
+
+  const objRow = document.getElementById('objections-row');
+  const objList = document.getElementById('objections-list');
+  objList.innerHTML = '';
+  if (deep.real_objections && deep.real_objections.length) {
+    objRow.style.display = 'block';
+    deep.real_objections.forEach(o => {
+      const div = document.createElement('div');
+      div.className = 'objection-item';
+      const meta = [o.raised_by, o.date].filter(Boolean).join(' · ');
+      div.innerHTML = o.point + (meta ? '<div class="objection-meta">' + meta + '</div>' : '');
+      objList.appendChild(div);
+    });
+  } else { objRow.style.display = 'none'; }
+
+  const diffRow = document.getElementById('diff-row');
+  if (deep.how_new_proposal_differs) {
+    diffRow.style.display = 'block';
+    document.getElementById('diff-value').textContent = deep.how_new_proposal_differs;
+  } else { diffRow.style.display = 'none'; }
+
+  const qRow = document.getElementById('questions-row');
+  const qList = document.getElementById('questions-list');
+  qList.innerHTML = '';
+  if (deep.open_questions_before_reproposing && deep.open_questions_before_reproposing.length) {
+    qRow.style.display = 'block';
+    deep.open_questions_before_reproposing.forEach(q => {
+      const li = document.createElement('li');
+      li.textContent = q;
+      qList.appendChild(li);
+    });
+  } else { qRow.style.display = 'none'; }
 }
 
 loadStatus();

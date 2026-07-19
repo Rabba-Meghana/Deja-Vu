@@ -54,7 +54,7 @@ def test_build_decision_units_from_real_shaped_thread():
 
 def test_safe_parse_handles_valid_json():
     raw = '{"is_deja_vu": true, "confidence": "high", "matched_source": "Source 1", "explanation": "test"}'
-    candidates = [{"url": "http://x.com", "date": "2024-01-01"}]
+    candidates = [{"url": "http://x.com", "date": "2024-01-01", "source_title": "Example RFC"}]
     result = reasoning._safe_parse(raw, candidates)
     assert result["is_deja_vu"] is True
     assert result["source_url"] == "http://x.com"

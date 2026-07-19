@@ -51,6 +51,10 @@ def check():
 
     try:
         verdict = reasoning.judge_deja_vu(proposal, candidates)
+        if verdict.get("is_deja_vu"):
+            deep = reasoning.deep_analyze(proposal, verdict, candidates)
+            if deep:
+                verdict["deep_analysis"] = deep
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 400
 
