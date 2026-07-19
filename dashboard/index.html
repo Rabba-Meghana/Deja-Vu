@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deja Vu — Decision Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0d12;
+    --panel: #12161f;
+    --panel-border: #232937;
+    --text: #e6e8ec;
+    --muted: #6b7385;
+    --amber: #f0a63a;
+    --red: #e5484d;
+    --green: #3ecf8e;
+    --line: #1c2230;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+  h1 .dot { color: var(--amber); }
+  .sub { color: var(--muted); font-size: 15px; line-height: 1.5; max-width: 560px; margin-bottom: 36px; }
+
+  .status-row {
+    display: flex; gap: 16px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--muted); margin-bottom: 32px;
+  }
+  .status-pill { display: flex; align-items: center; gap: 6px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .status-dot.off { background: var(--red); }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+    padding: 24px;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    padding: 14px;
+    min-height: 90px;
+    resize: vertical;
+  }
+  textarea:focus { outline: none; border-color: var(--amber); }
+
+  button {
+    margin-top: 14px;
+    background: var(--amber);
+    color: #1a1000;
+    border: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .result { margin-top: 28px; display: none; }
+  .result.show { display: block; }
+
+  .verdict-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 3px;
+  }
+  .badge.high { background: rgba(229,72,77,0.15); color: var(--red); border: 1px solid rgba(229,72,77,0.4); }
+  .badge.medium { background: rgba(240,166,58,0.15); color: var(--amber); border: 1px solid rgba(240,166,58,0.4); }
+  .badge.low { background: rgba(107,115,133,0.15); color: var(--muted); border: 1px solid var(--panel-border); }
+  .badge.clear { background: rgba(62,207,142,0.15); color: var(--green); border: 1px solid rgba(62,207,142,0.4); }
+
+  .explanation { font-size: 15px; line-height: 1.6; margin-bottom: 18px; }
+  .reasoning-block {
+    background: var(--bg);
+    border-left: 2px solid var(--amber);
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    line-height: 1.6;
+  }
+  .receipt {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .receipt a { color: var(--amber); text-decoration: none; }
+  .receipt a:hover { text-decoration: underline; }
+
+  .candidates { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .candidates-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .cand-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 6px 0;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+  }
+  .cand-row a { color: var(--text); text-decoration: none; }
+  .cand-row a:hover { color: var(--amber); }
+  .cand-score { color: var(--amber); }
+
+  .loading { display: none; align-items: center; gap: 10px; margin-top: 20px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+  .loading.show { display: flex; }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); animation: pulse 1s infinite ease-in-out; }
+  @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+  .error-box { color: var(--red); font-family: 'IBM Plex Mono', monospace; font-size: 13px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Decision memory / real-time recall</div>
+  <h1>déjà vu<span class="dot">.</span></h1>
+  <p class="sub">Type a new proposal. It gets checked against real, indexed discussion history — not vibes, not memory. If it's already been argued out, you get the receipts.</p>
+
+  <div class="status-row">
+    <div class="status-pill"><span class="status-dot" id="idx-dot"></span><span id="idx-status">checking index…</span></div>
+    <div class="status-pill"><span class="status-dot" id="groq-dot"></span><span id="groq-status">checking reasoning engine…</span></div>
+  </div>
+
+  <div class="panel">
+    <textarea id="proposal" placeholder="e.g. What if we let generic parameters infer their trait bounds automatically instead of requiring explicit bounds?"></textarea>
+    <button id="checkBtn" onclick="checkDejaVu()">Check for déjà vu</button>
+
+    <div class="loading" id="loading"><span class="pulse"></span> searching real history, then reasoning over it…</div>
+    <div class="error-box" id="error" style="display:none;"></div>
+
+    <div class="result" id="result">
+      <div class="verdict-header">
+        <span class="badge" id="badge">—</span>
+      </div>
+      <div class="explanation" id="explanation"></div>
+      <div class="reasoning-block" id="reasoning-block" style="display:none;"></div>
+      <div class="receipt" id="receipt"></div>
+
+      <div class="candidates">
+        <div class="candidates-label">Evidence considered</div>
+        <div id="candidates-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    document.getElementById('idx-status').textContent = data.indexed_units + ' real decision units indexed';
+    document.getElementById('idx-dot').classList.toggle('off', data.indexed_units === 0);
+
+    document.getElementById('groq-status').textContent = data.groq_ready ? 'reasoning engine ready' : 'GROQ_API_KEY not set';
+    document.getElementById('groq-dot').classList.toggle('off', !data.groq_ready);
+  } catch (e) {
+    document.getElementById('idx-status').textContent = 'API not reachable — run app.py';
+    document.getElementById('idx-dot').classList.add('off');
+  }
+}
+
+async function checkDejaVu() {
+  const proposal = document.getElementById('proposal').value.trim();
+  if (!proposal) return;
+
+  document.getElementById('checkBtn').disabled = true;
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('error').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/check', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({proposal})
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      document.getElementById('error').textContent = data.error;
+      document.getElementById('error').style.display = 'block';
+      return;
+    }
+
+    renderResult(data);
+  } catch (e) {
+    document.getElementById('error').textContent = 'Request failed: ' + e.message;
+    document.getElementById('error').style.display = 'block';
+  } finally {
+    document.getElementById('checkBtn').disabled = false;
+    document.getElementById('loading').classList.remove('show');
+  }
+}
+
+function renderResult(data) {
+  const badge = document.getElementById('badge');
+  const conf = (data.confidence || 'low').toLowerCase();
+  const isDejaVu = data.is_deja_vu;
+
+  if (!isDejaVu) {
+    badge.textContent = 'No match found';
+    badge.className = 'badge clear';
+  } else {
+    badge.textContent = conf + ' confidence match';
+    badge.className = 'badge ' + conf;
+  }
+
+  document.getElementById('explanation').textContent = data.explanation || '';
+
+  const rb = document.getElementById('reasoning-block');
+  if (data.original_reasoning) {
+    rb.style.display = 'block';
+    rb.textContent = 'Original reasoning: ' + data.original_reasoning;
+  } else {
+    rb.style.display = 'none';
+  }
+
+  const receipt = document.getElementById('receipt');
+  if (data.source_url) {
+    receipt.innerHTML = 'Source: <a href="' + data.source_url + '" target="_blank">' + data.source_url + '</a> (' + (data.source_date || '').slice(0,10) + ')';
+  } else {
+    receipt.textContent = '';
+  }
+
+  const list = document.getElementById('candidates-list');
+  list.innerHTML = '';
+  (data.candidates_considered || []).forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'cand-row';
+    row.innerHTML = '<a href="' + c.url + '" target="_blank">' + c.title + '</a><span class="cand-score">' + c.score + '</span>';
+    list.appendChild(row);
+  });
+
+  document.getElementById('result').classList.add('show');
+}
+
+loadStatus();
+</script>
+</body>
+</html>
